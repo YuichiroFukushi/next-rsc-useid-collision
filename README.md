@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# `useId()` in Server Components collides across client-side navigations
 
-## Getting Started
+Minimal reproduction for a Next.js App Router bug. `useId()` called in a
+**Server Component** returns ids from a counter that restarts at 1 for every
+RSC request (`_S_1_`, `_S_2_`, …). A client-side navigation renders only the
+changed segment, so the new segment's first `useId()` returns `_S_1_` again,
+the same id a Server Component in the persisted root layout already put in the
+DOM. Anything resolved document-wide by id (`fill="url(#…)"`, `mask`,
+`clip-path`, `aria-labelledby`, `htmlFor`) then points at the wrong element.
 
-First, run the development server:
+## Reproduce
 
-```bash
+```sh
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Open <http://localhost:3000/other> (a hard load).
+2. Click **Back to /** (a `next/link` client-side navigation).
+3. The home page's "dots" texture is drawn with the root layout's **lines**
+   pattern, and both captions print the same id, `_S_1_`.
+4. Reload the page: the dots come back and the ids differ (`_S_1_`, `_S_2_`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The same happens with `npm run build && npm start`. The layout sets
+`export const dynamic = "force-dynamic"` so the routes render per request, as
+any route that reads `cookies()` or `headers()` does. A fully static route does
+not reproduce it: a prerender renders the whole tree in one pass, so the page's
+ids never restart.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Files
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/texture.tsx`: the Server Component that calls `useId()` for an SVG
+  `<pattern id>` and prints the id it received.
+- `app/layout.tsx`: renders it once in the persistent root layout ("lines").
+- `app/page.tsx`: renders it once in the home segment ("dots").
+- `app/other/page.tsx`: the page to hard-load first, with the link back.
