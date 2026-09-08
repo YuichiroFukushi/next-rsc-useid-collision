@@ -27,6 +27,9 @@ any route that reads `cookies()` or `headers()` does. A fully static route does
 not reproduce it: a prerender renders the whole tree in one pass, so the page's
 ids never restart.
 
+Reproduced on `next@16.3.4` and `next@16.4.0-canary.20` (this repo pins the
+canary).
+
 ## Files
 
 - `app/texture.tsx`: the Server Component that calls `useId()` for an SVG
