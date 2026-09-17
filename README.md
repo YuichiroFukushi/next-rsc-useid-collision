@@ -1,5 +1,11 @@
 # `useId()` in Server Components collides across client-side navigations
 
+Reported upstream as [vercel/next.js#98337][issue]. A Next.js maintainer
+picked it up and a fix is in progress in [vercel/next.js#98360][pr].
+
+[issue]: https://github.com/vercel/next.js/issues/98337
+[pr]: https://github.com/vercel/next.js/pull/98360
+
 Minimal reproduction for a Next.js App Router bug. `useId()` called in a
 **Server Component** returns ids from a counter that restarts at 1 for every
 RSC request (`_S_1_`, `_S_2_`, …). A client-side navigation renders only the
